@@ -1,0 +1,41 @@
+# 编译产物
+build/
+test/
+bin/
+lib/
+*.o
+*.a
+*.so
+*.exe
+
+# CMake 中间文件
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 日志/临时文件
+*.log
+logs/
+tmp/
+
+# 测试覆盖率
+*.gcov
+*.gcda
+*.gcno
+
+config.json
+node_modules/
+generated/

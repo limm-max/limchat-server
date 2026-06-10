@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package message;
+
+// 服务：GateServer 调它来要验证码
+service VerifyService {
+    rpc GetVerifyCode (GetVerifyReq) returns (GetVerifyRsp) {}
+}
+
+// 请求：只带邮箱
+message GetVerifyReq {
+    string email = 1;          // 字段后的数字是"字段号"，线格式按它编码，不是默认值
+}
+
+// 响应：错误码 + 邮箱回显 + 验证码
+message GetVerifyRsp {
+    int32  error = 1;
+    string email = 2;
+    string code  = 3;
+}
