@@ -41,6 +41,7 @@ add_executable(GateServer
     src/LogicSystem.cc
     generated/verify.pb.cc 
     generated/verify.grpc.pb.cc
+    src/ConfigMgr.cc
 )
 
 target_include_directories(GateServer PUBLIC
@@ -53,6 +54,7 @@ target_link_libraries(GateServer PRIVATE
     Threads::Threads
     lim_base
     gRPC::grpc++ 
-    protobuf::libprotobuf)
+    protobuf::libprotobuf
+    hiredis)
 
 add_subdirectory(base)  

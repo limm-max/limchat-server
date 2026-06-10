@@ -56,7 +56,7 @@ void HttpConnection::WriteResponse() {
     _response.content_length(_response.body().size());   // 设 Content-Length（让客户端知道 body 多长）
     http::async_write(_socket, _response,
         [self](beast::error_code ec, std::size_t) {
-            LOG_DEBUG << "[GateServer]回复已发送，正在关闭连接";
+            LOG_DEBUG << "回复已发送，正在关闭连接";
             self->_socket.shutdown(tcp::socket::shutdown_send, ec);  // 关写端
             self->deadline_.cancel();                                // 撤销超时
         });
@@ -66,7 +66,7 @@ void HttpConnection::CheckDeadline() {
     auto self = shared_from_this();
     deadline_.async_wait([self](beast::error_code ec) {
         if (!ec) {
-            LOG_DEBUG << "[GateServer]请求超时，关闭连接";
+            LOG_DEBUG << "关闭连接";
             self->_socket.close(ec);
         }
     });

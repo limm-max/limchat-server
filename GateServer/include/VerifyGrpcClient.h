@@ -3,7 +3,7 @@
 #include "Singleton.h"
 #include <grpcpp/grpcpp.h>
 #include "verify.grpc.pb.h"
-
+#include "ConfigMgr.h"
 using grpc::Channel; using grpc::ClientContext; using grpc::Status;
 using message::GetVerifyReq; using message::GetVerifyRsp; using message::VerifyService;
 
@@ -24,8 +24,17 @@ public:
 
 private:
     VerifyGrpcClient() {
-        auto channel = grpc::CreateChannel("127.0.0.1:50051",   // VerifyServer 地址
+
+        //读config
+        auto cfg = ConfigMgr::GetInstance();
+        std::string host=(*cfg)["VerifyServer"]["host"];
+        std::string port=(*cfg)["VerifyServer"]["port"];
+        std::string addr=host + ":" + port;
+        auto channel = grpc::CreateChannel(addr,   
                                            grpc::InsecureChannelCredentials());
+        //硬编码
+        // auto channel = grpc::CreateChannel("127.0.0.1:50051",   
+        //                                    grpc::InsecureChannelCredentials());
         stub_ = VerifyService::NewStub(channel);   // channel→stub，整个程序复用这一个
     }
     std::unique_ptr<VerifyService::Stub> stub_;
