@@ -42,6 +42,8 @@ add_executable(GateServer
     generated/verify.pb.cc 
     generated/verify.grpc.pb.cc
     src/ConfigMgr.cc
+    src/RedisConPool.cc
+    src/RedisMgr.cc
 )
 
 target_include_directories(GateServer PUBLIC

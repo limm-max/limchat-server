@@ -6,7 +6,7 @@
 #include <memory>
 #include <hiredis/hiredis.h> 
 #include "RedisConnection.h"
-
+#include<string>
 class RedisConPool{
 public:
     RedisConPool(int poolSize,const char* host,int port,const char* pwd);
@@ -17,9 +17,7 @@ public:
     void returnConnection(std::unique_ptr<RedisConnection> conn);
 
     //关闭连接池
-    void Close(){
-
-    }
+    void Close();
 
 private:
     std::atomic<bool> _b_stop;  //停机标志

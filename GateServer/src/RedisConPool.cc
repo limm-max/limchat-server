@@ -31,6 +31,10 @@ RedisConPool::RedisConPool(int poolSize,const char* host, int port, const char* 
         LOG_DEBUG<<"redis 连接池初始化结束，连接池中的连接数为:"<<_connections.size();
     }
 
+void RedisConPool::Close(){
+    _b_stop=true;
+    _cond.notify_all();
+}
 
 RedisConPool::~RedisConPool(){
     Close();
@@ -40,10 +44,7 @@ RedisConPool::~RedisConPool(){
     
 }
 
-void RedisConPool::Close(){
-    _b_stop=true;
-    _cond.notify_all();
-}
+
 
 std::unique_ptr<RedisConnection> RedisConPool::getConnection(){
     std::unique_lock<std::mutex> lock(_mutex);

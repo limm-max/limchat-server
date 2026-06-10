@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "AsyncLogging.h"
 #include "ConfigMgr.h"
+#include "RedisMgr.h"
 using namespace lim;
 
 static AsyncLogging* g_asyncLog = nullptr;
@@ -13,6 +14,16 @@ static void asyncOutput(const char* msg, int len) { g_asyncLog->append(msg, len)
 
 int main(){
 
+    //redis test
+    std::string val;
+    bool ok=RedisMgr::GetInstance()->Get("code_2389915964@qq.com",val);
+    std::cout << "Redis Get ok=" << ok << " value=" << val << std::endl;
+    RedisMgr::GetInstance()->Set("test_key", "hello");
+    std::string v2;
+    RedisMgr::GetInstance()->Get("test_key", v2);
+    std::cout << "test_key=" << v2 << std::endl;   
+
+    
     //装载日志系统
     AsyncLogging asyncLog("gateserver", 500 * 1000 * 1000);   // basename, rollSize=500MB
     g_asyncLog = &asyncLog;
