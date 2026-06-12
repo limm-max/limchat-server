@@ -31,7 +31,7 @@ void HttpConnection::HandleReq() {
     _response.keep_alive(false); 
 
     if (_request.method() == http::verb::post) {
-        // target() 是 path（如 "/get_varifycode"），转 std::string 当 map 的 key
+        // target() 是 path（如 "/get_verifycode"），转 std::string 当 map 的 key
         bool ok = LogicSystem::GetInstance()->HandlePost(
                       std::string(_request.target()), shared_from_this()); 
         _response.result(ok ? http::status::ok : http::status::not_found);

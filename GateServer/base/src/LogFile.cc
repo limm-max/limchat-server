@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <time.h>
+#include<filesystem>
 
 namespace lim {
 
@@ -80,6 +81,18 @@ bool LogFile::rollFile() {
         lastRoll_ = now;
         lastFlush_ = now;
         startOfPeriod_ = start;
+
+        //确保日志文件所在目录存在，不存在则递归创建
+        std::filesystem::path dir =
+            std::filesystem::path(filename).parent_path();
+        if (!dir.empty()) {
+        std::error_code ec;
+        std::filesystem::create_directories(dir, ec);  // 不抛异常,用 ec 接错误
+        if (ec) {
+            fprintf(stderr, "create log dir %s failed: %s\n",
+                    dir.c_str(), ec.message().c_str());
+            }
+        }
         file_.reset(new FileUtil::AppendFile(filename));   // 创建新文件
         return true;
     }

@@ -24,6 +24,9 @@ public:
 
 private:
     LogicSystem();                                   // 私有构造，只能 GetInstance 造
+
+    //长逻辑业务处理函数
+    void HandleUserRegister(std::shared_ptr<HttpConnection> conn); 
     std::map<std::string, HttpHandler> _get_handlers;  // GET 路由表
     std::map<std::string, HttpHandler> _post_handlers; // POST 路由表
 };

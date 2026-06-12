@@ -5,7 +5,6 @@
 #include<boost/beast.hpp>
 #include<boost/beast/http.hpp>
 #include<boost/asio.hpp>
-
 #include <nlohmann/json.hpp>
 
 namespace beast = boost::beast;   // 之后写 beast::flat_buffer，而非 boost::beast::flat_buffer
@@ -17,6 +16,11 @@ using json=nlohmann::json;
 enum ErrorCodes{
     Success=0,
     Error_Json=1001,
-    RPCFailed=1003,
-    RedisErr=1004,
+    RPCFailed=1002,
+    VerifyExpired=1003, //redis中验证码过期或者没有
+    VerifyCodeErr=1004,
+    EmailExist=1005,     //user已经存在（注册时）
+    UserExist=1006,
+    PasswdErr=1007,     //密码错误
+    DatabaseFailed=1008
 };

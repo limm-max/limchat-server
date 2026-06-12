@@ -44,6 +44,9 @@ add_executable(GateServer
     src/ConfigMgr.cc
     src/RedisConPool.cc
     src/RedisMgr.cc
+    src/MysqlPool.cc
+    src/MysqlDao.cc
+    src/MysqlMgr.cc
 )
 
 target_include_directories(GateServer PUBLIC
@@ -57,6 +60,7 @@ target_link_libraries(GateServer PRIVATE
     lim_base
     gRPC::grpc++ 
     protobuf::libprotobuf
-    hiredis)
+    hiredis
+    mysqlcppconn)
 
 add_subdirectory(base)  

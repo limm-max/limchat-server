@@ -1,5 +1,6 @@
 #include "RedisMgr.h"
 #include "ConfigMgr.h"
+#include "Defer.h"
 #include "Logger.h"
 
 RedisMgr::RedisMgr(){
@@ -35,17 +36,17 @@ bool RedisMgr::Get(const std::string& key, std::string& value){
         return false;
     }
 
+    Defer defer([this,&conn,&reply](){
+        freeReplyObject(reply);
+        _pool->returnConnection(std::move(conn));});
+
     //GET的key不存在
     if(reply->type!=REDIS_REPLY_STRING){
         LOG_DEBUG<<"redis连接GET key不存在";
-        freeReplyObject(reply);
-        _pool->returnConnection(std::move(conn));
         return false;
     }
 
     value=reply->str;
-    freeReplyObject(reply);
-    _pool->returnConnection(std::move(conn));
     return true;
 }
 
