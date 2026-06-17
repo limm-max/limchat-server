@@ -9,7 +9,7 @@
 MysqlPool::MysqlPool(const std::string& host,const std::string& port,
                 const std::string& user,const std::string& passwd,
                 const std::string& schema,int poolSize)
-            :_user(user),_pass(passwd),_schema(schema),_poolSize(poolSize)
+            :_user(user),_pass(passwd),_schema(schema),_poolSize(poolSize),_b_stop(false)
         {
             _url="tcp://"+host+":"+port;
             sql::mysql::MySQL_Driver* driver=
@@ -25,9 +25,10 @@ MysqlPool::MysqlPool(const std::string& host,const std::string& port,
                     LOG_ERROR<<"MysqlPool 初始化创建连接#"<<i<<"失败："<<e.what();
                 }
             }
-        if (_pool.empty()) {
-            LOG_FATAL << "mysql pool empty, check config/grant";  // 一条都没起来,fail loud
-}   
+            if (_pool.empty()) {
+                LOG_ERROR << "mysql pool empty, check config/grant";  // 一条都没起来,fail loud
+            }
+            LOG_INFO<<"Mysql pool 初始化结束，池子连接数为:"<<_pool.size();
         }
 
 MysqlPool::~MysqlPool(){
@@ -43,7 +44,10 @@ std::unique_ptr<MysqlConnection> MysqlPool::getConnection(){
     _cond.wait(lock,[this](){
         return _b_stop || !_pool.empty();
     });
-    if(_b_stop) return nullptr;
+    if(_b_stop) {
+        LOG_DEBUG<<"mysql pool已停止，返回空连接。";
+        return nullptr;
+    }
     auto conn=std::move(_pool.front());
     _pool.pop();
     return conn;

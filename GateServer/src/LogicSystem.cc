@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "RedisMgr.h"
 #include "MysqlMgr.h"
+#include<exception>
 LogicSystem::LogicSystem(){
     RegPost("/get_verifycode",[](std::shared_ptr<HttpConnection> connection){
 
@@ -94,6 +95,7 @@ void LogicSystem::HandleUserRegister(std::shared_ptr<HttpConnection> conn){
     std::string passwd     = src["passwd"].get<std::string>();
     std::string confirm    = src["confirm"].get<std::string>();
     std::string verifycode = src["verifycode"].get<std::string>();
+    LOG_DEBUG<<"字段检查完毕，进入匹配阶段";
 
     //4.密码与确认密码匹配判断
     if (passwd != confirm) {
@@ -123,12 +125,16 @@ void LogicSystem::HandleUserRegister(std::shared_ptr<HttpConnection> conn){
 
     //6.查重+mysql建用户
     int uid = 0;   // 桩值
+
     int reg_res = MysqlMgr::GetInstance()->RegUser(user, email, passwd, uid);
     if (reg_res != ErrorCodes::Success) {
         root["error"] = reg_res;          // UserExist / EmailExist / DB错误
+        LOG_DEBUG<<"创建用户失败，失败原因是:"<<reg_res;
         beast::ostream(conn->_response.body()) << root.dump();
         return;
     }
+
+    
 
     //7.组装回包
     root["error"] = ErrorCodes::Success;

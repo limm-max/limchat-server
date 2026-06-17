@@ -19,7 +19,7 @@ int main(){
     AsyncLogging asyncLog("log/GateServer", 500 * 1000 * 1000);   // basename, rollSize=500MB
     g_asyncLog = &asyncLog;
     Logger::setOutput(asyncOutput);          //  Logger 出口接到异步后端
-    Logger::setLogLevel(Logger::DEBUG);      // 运行期级别（调试 DEBUG，上线改 INFO）
+    Logger::setLogLevel(Logger::DEBUG);      // 运行期级别
     asyncLog.start();
     LOG_INFO<<"日志系统启动完毕。";
 

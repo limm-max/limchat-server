@@ -27,7 +27,10 @@ MysqlDao::~MysqlDao() {
 int MysqlDao::RegUser(const std::string& name, const std::string& email,
                       const std::string& pwd, int& uid) {
     auto con = _pool->getConnection();
-    if (con == nullptr) return ErrorCodes::DatabaseFailed;   
+    if (con == nullptr) {
+        LOG_DEBUG<<"获取连接失败";
+        return ErrorCodes::DatabaseFailed;   
+    }
 
     Defer defer([this, &con](){ _pool->returnConnection(std::move(con)); });
 
@@ -72,6 +75,9 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email,
             return ErrorCodes::UserExist;               // 兜底归类
         }
         LOG_ERROR << "RegUser SQLException: " << e.what();
-        return ErrorCodes::DatabaseFailed;                   // 建议加个专门 DB 错误码
+        return ErrorCodes::DatabaseFailed;                  
+    } catch(std::exception& e){
+        LOG_ERROR<<"Connection Reply Failed:"<<e.what();
+        return ErrorCodes::DatabaseFailed;
     }
 }
