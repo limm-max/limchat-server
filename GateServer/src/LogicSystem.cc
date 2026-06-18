@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "RedisMgr.h"
 #include "MysqlMgr.h"
+#include"StatusGrpcClient.h"
 #include<exception>
 LogicSystem::LogicSystem(){
     RegPost("/get_verifycode",[](std::shared_ptr<HttpConnection> connection){
@@ -195,18 +196,24 @@ void LogicSystem::HandleUserLogin(std::shared_ptr<HttpConnection> connection){
         return;
     }
 
-    // 4：拿 ChatServer 分配 + token —— STUB（第4步换成 gRPC 调 StatusServer）
-    std::string stub_host  = "127.0.0.1";
-    std::string stub_port  = "8090";
-    std::string stub_token = "fake_token_for_test";
+    // 4：grpc:拿 ChatServer 分配 + token
+    auto reply = StatusGrpcClient::GetInstance()->GetChatServer(userInfo.uid);
+    if (reply.error() != ErrorCodes::Success) {
+        
+        root["error"] = ErrorCodes::RPCFailed;
+        beast::ostream(connection->_response.body()) << root.dump();
+        return;
+    }
+
+    
 
     // 组装回包
     root["error"] = ErrorCodes::Success;
     root["user"]  = identifier;
     root["uid"]   = userInfo.uid;
-    root["token"] = stub_token;
-    root["host"]  = stub_host;
-    root["port"]  = stub_port;
+    root["token"] = reply.token();
+    root["host"]  = reply.host();
+    root["port"]  = reply.port();
     beast::ostream(connection->_response.body()) << root.dump();
     return;
 

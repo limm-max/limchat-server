@@ -40,3 +40,5 @@ struct UserInfo{
     std::string email;
 
 };
+
+const std::string USERTOKENPREFIX="utoken_";

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
-project(GateServer
+project(StatusServer
         VERSION 0.1.0
-        DESCRIPTION "Gate Server of a chat program"
+        DESCRIPTION "Status Server of a chat program"
         LANGUAGES CXX)
 
 #设置编程语言标准
@@ -34,28 +34,24 @@ find_package(Threads REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 
-add_executable(GateServer           
-    GateServer.cc
-    src/CServer.cc
-    src/HttpConnection.cc
-    src/LogicSystem.cc
-    generated/verify.pb.cc 
-    generated/verify.grpc.pb.cc
+add_executable(StatusServer           
+    StatusServer.cc
+    src/StatusServiceImpl.cc
     generated/status.pb.cc 
     generated/status.grpc.pb.cc
     src/ConfigMgr.cc
     src/RedisConPool.cc
     src/RedisMgr.cc
-    src/MysqlPool.cc
-    src/MysqlDao.cc
-    src/MysqlMgr.cc
+    # src/MysqlPool.cc
+    # src/MysqlDao.cc
+    # src/MysqlMgr.cc
 )
 
-target_include_directories(GateServer PUBLIC
+target_include_directories(StatusServer PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 
-target_link_libraries(GateServer PRIVATE
+target_link_libraries(StatusServer PRIVATE
     nlohmann_json::nlohmann_json     
     Boost::headers         
     Threads::Threads
@@ -63,6 +59,7 @@ target_link_libraries(GateServer PRIVATE
     gRPC::grpc++ 
     protobuf::libprotobuf
     hiredis
-    mysqlcppconn)
+    # mysqlcppconn
+    )
 
 add_subdirectory(base)  
