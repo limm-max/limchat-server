@@ -38,6 +38,10 @@ LogicSystem::LogicSystem(){
         HandleUserRegister(connection);
     });
 
+    RegPost("/user_login",[this](std::shared_ptr<HttpConnection> connection){
+        HandleUserLogin(connection);
+    });
+
 
 }
 
@@ -143,6 +147,67 @@ void LogicSystem::HandleUserRegister(std::shared_ptr<HttpConnection> conn){
     root["uid"]   = uid;
     beast::ostream(conn->_response.body()) << root.dump();
     LOG_INFO  << "user register success. user=" << user << " uid=" << uid;
+    return;
+
+}
+
+
+void LogicSystem::HandleUserLogin(std::shared_ptr<HttpConnection> connection){
+    auto body_str = boost::beast::buffers_to_string(connection->_request.body().data());
+    std::cout << "receive login body: " << body_str << std::endl;
+    connection->_response.set(http::field::content_type, "text/json");
+
+    nlohmann::json root;
+
+    // 1：安全解析
+    auto src_root = nlohmann::json::parse(body_str, nullptr, false);
+    if (src_root.is_discarded()) {
+        root["error"] = ErrorCodes::Error_Json;
+        beast::ostream(connection->_response.body()) << root.dump();
+        return;
+    }
+
+    // 2：字段齐全
+    if (!src_root.contains("user") || !src_root.contains("passwd")) {
+        root["error"] = ErrorCodes::Error_Json;
+        beast::ostream(connection->_response.body()) << root.dump();
+        return;
+    }
+
+    auto identifier = src_root["user"].get<std::string>();   // 用户名或邮箱
+    auto pwd        = src_root["passwd"].get<std::string>();
+
+    // 3：MySQL 验凭据
+    UserInfo userInfo;
+    int rc = MysqlMgr::GetInstance()->CheckPwd(identifier, pwd, userInfo);
+    if (rc != ErrorCodes::Success) {
+     
+        LOG_ERROR << "login failed, identifier=" << identifier << " rc=" << rc ;
+
+        // 模糊化：查无此人对外也说成"账号或密码错误"，防用户名枚举
+        if (rc == ErrorCodes::UserNotExist) {
+            root["error"] = ErrorCodes::PasswdInvalid;
+        } else {
+            // PasswdInvalid 原样回；MysqlFailed 也原样回（客户端对未约定码统一显示"服务异常"）
+            root["error"] = rc;
+        }
+        beast::ostream(connection->_response.body()) << root.dump();
+        return;
+    }
+
+    // 4：拿 ChatServer 分配 + token —— STUB（第4步换成 gRPC 调 StatusServer）
+    std::string stub_host  = "127.0.0.1";
+    std::string stub_port  = "8090";
+    std::string stub_token = "fake_token_for_test";
+
+    // 组装回包
+    root["error"] = ErrorCodes::Success;
+    root["user"]  = identifier;
+    root["uid"]   = userInfo.uid;
+    root["token"] = stub_token;
+    root["host"]  = stub_host;
+    root["port"]  = stub_port;
+    beast::ostream(connection->_response.body()) << root.dump();
     return;
 
 }

@@ -8,6 +8,7 @@
 #include <cppconn/statement.h>
 #include <cppconn/exception.h>
 #include <ctime>
+#include<string>
 
 MysqlDao::MysqlDao() {
 
@@ -29,7 +30,7 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email,
     auto con = _pool->getConnection();
     if (con == nullptr) {
         LOG_DEBUG<<"获取连接失败";
-        return ErrorCodes::DatabaseFailed;   
+        return ErrorCodes::MysqlFailed;   
     }
 
     Defer defer([this, &con](){ _pool->returnConnection(std::move(con)); });
@@ -75,9 +76,63 @@ int MysqlDao::RegUser(const std::string& name, const std::string& email,
             return ErrorCodes::UserExist;               // 兜底归类
         }
         LOG_ERROR << "RegUser SQLException: " << e.what();
-        return ErrorCodes::DatabaseFailed;                  
+        return ErrorCodes::MysqlFailed;                  
     } catch(std::exception& e){
         LOG_ERROR<<"Connection Reply Failed:"<<e.what();
-        return ErrorCodes::DatabaseFailed;
+        return ErrorCodes::MysqlFailed;
+    }
+}
+
+//根据name从库中查询——取库中密码——与传入的密码对比——填入UserINfo
+int MysqlDao::CheckPwd(const std::string& identifier, const std::string& pwd, UserInfo& userInfo) {
+    //1.借连接
+    auto conn=_pool->getConnection();
+    if(conn==nullptr){
+        LOG_ERROR<<"mysql pool is empty.";
+        return ErrorCodes::MysqlFailed;
+    }
+
+    Defer defer([this,&conn](){
+        _pool->returnConnection(std::move(conn));
+    });
+
+
+    try{
+        //2.预编译语句
+        bool is_email=(identifier.find('@')!=std::string::npos);
+        std::string sql = is_email
+            ? "SELECT * FROM users WHERE email = ?"
+            : "SELECT * FROM users WHERE name  = ?";
+
+        std::unique_ptr<sql::PreparedStatement> pstmt(
+            conn->_conn->prepareStatement(sql));
+        
+        pstmt->setString(1,identifier);
+
+
+        //3.执行语句获得结果
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+
+        if (!res->next()) {
+            return ErrorCodes::UserNotExist;          // 查无此人
+        }
+
+        std::string origin_pwd=res->getString("pwd");
+        if(pwd!=origin_pwd){
+            return ErrorCodes::PasswdInvalid;
+        }
+
+        //4.填写用户信息
+        userInfo.name  = res->getString("name");
+        userInfo.email = res->getString("email");
+        userInfo.pwd   = origin_pwd;
+        userInfo.uid   = res->getInt("id");
+        return ErrorCodes::Success;
+    }
+    catch(sql::SQLException& e){
+        LOG_ERROR<<"sqlException:"<<e.what()
+                 <<"(code:"<<e.getErrorCode()
+                 <<",state:"<<e.getSQLState()<<")";
+        return ErrorCodes::MysqlFailed;
     }
 }

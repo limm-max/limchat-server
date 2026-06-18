@@ -15,12 +15,27 @@ using json=nlohmann::json;
 
 enum ErrorCodes{
     Success=0,
+
     Error_Json=1001,
     RPCFailed=1002,
     VerifyExpired=1003, //redis中验证码过期或者没有
     VerifyCodeErr=1004,
     EmailExist=1005,     //user已经存在（注册时）
     UserExist=1006,
-    PasswdErr=1007,     //密码错误
-    DatabaseFailed=1008
+    PasswdErr=1007,     //密码passwd与验证密码confirm不匹配
+    PasswdInvalid = 1008,   // 用户名或密码不匹配
+
+
+    MysqlFailed=2001,
+    UserNotExist=2002,
+
+};
+
+
+struct UserInfo{
+    std::string name;
+    std::string pwd;
+    int uid;
+    std::string email;
+
 };
