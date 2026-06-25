@@ -136,3 +136,68 @@ int MysqlDao::CheckPwd(const std::string& identifier, const std::string& pwd, Us
         return ErrorCodes::MysqlFailed;
     }
 }
+
+
+int MysqlDao::SearchUser(int uid,UserInfo& userInfo){
+    //1.借连接
+    auto conn=_pool->getConnection();
+    if(conn==nullptr){
+        LOG_ERROR<<"mysql is empty";
+        return ErrorCodes::MysqlFailed;
+    }
+
+    Defer defer([this,&conn](){
+        _pool->returnConnection(std::move(conn));});
+    
+    try{
+        std::unique_ptr<sql::PreparedStatement> pstmt(
+            conn->_conn->prepareStatement("SELECT uid,name,email,nick,icon,sex FROM users WHERE uid=?")
+        );
+
+        pstmt->setInt(1,uid);
+
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+        if(!res->next()){
+            LOG_INFO<<"User uid "<<uid<<"is not exist.";
+            return ErrorCodes::UserNotExist;
+        }
+
+        userInfo.uid   = res->getInt("uid");
+        userInfo.name  = res->getString("name");
+        userInfo.email = res->getString("email");
+        userInfo.nick  = res->getString("nick");
+        userInfo.icon  = res->getString("icon");
+        userInfo.sex   = res->getInt("sex");
+
+        return ErrorCodes::Success;
+    }catch(sql::SQLException& e){
+        LOG_ERROR<<"SearchUser SQL error:"<<e.what()
+                 <<",uid="<<uid;
+        return ErrorCodes::MysqlFailed;
+    }
+
+
+}
+
+int MysqlDao::AddFriendApply(int from_uid, int to_uid, const std::string& apply_msg) {
+    auto con = _pool->getConnection();
+    if (con == nullptr) {
+        return ErrorCodes::MysqlFailed;
+    }
+    Defer defer([this, &con]() { _pool->returnConnection(std::move(con)); });
+
+    try {
+        std::unique_ptr<sql::PreparedStatement> ps(con->_conn->prepareStatement(
+            "INSERT INTO friend_apply (from_uid, to_uid, apply_msg) VALUES (?, ?, ?)"));
+        ps->setInt(1, from_uid);
+        ps->setInt(2, to_uid);
+        ps->setString(3, apply_msg);
+        ps->executeUpdate();
+        return ErrorCodes::Success;
+    }
+    catch (sql::SQLException& e) {
+        LOG_ERROR << "AddFriendApply SQL error: " << e.what()
+                  << ", from=" << from_uid << ", to=" << to_uid;
+        return ErrorCodes::MysqlFailed;
+    }
+}
