@@ -46,6 +46,26 @@ struct UserInfo{
 
 };
 
+struct ApplyInfo{
+    int from_uid;
+    std::string name;
+    std::string nick;
+    std::string icon;
+    int sex;
+    std::string apply_msg;
+    int status;
+
+};
+
+struct FriendInfo {
+    int uid;
+    std::string name;
+    std::string nick;
+    std::string icon;
+    int sex;
+    std::string back;   // 单向备注名
+};
+
 //报文常量定义
 #define HEAD_ID_LEN     2
 #define HEAD_DATA_LEN   2
@@ -65,6 +85,17 @@ enum MSG_IDS{
     MSG_ADD_FRIEND_APPLY      = 1006,  // 申请好友
     MSG_ADD_FRIEND_APPLY_RSP  = 1007,  // 申请好友回复
     MSG_NOTIFY_ADD_FRIEND     =1008,    //查询自己的待通过申请好友
+
+    MSG_GET_APPLY_LIST      = 1009,
+    MSG_GET_APPLY_LIST_RSP  = 1010,
+    MSG_AUTH_FRIEND_APPLY   = 1011,     //同意/拒绝好友申请
+    MSG_AUTH_FRIEND_APPLY_RSP = 1012,
+    MSG_NOTIFY_AUTH_FRIEND  = 1013,   // 通知
+
+    MSG_GET_FRIEND_LIST     = 1014,
+    MSG_GET_FRIEND_LIST_RSP = 1015, 
+
+
 };
 
 
@@ -72,3 +103,5 @@ enum MSG_IDS{
 const std::string USERTOKENPREFIX="utoken_";
 const std::string LOGINCOUNTPREFIX = "logincount_";   // 各服连接数
 const std::string USERSERVERPREFIX = "userserver_";   // uid→所在服务器：userserver_<uid>
+
+

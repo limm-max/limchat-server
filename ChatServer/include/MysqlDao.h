@@ -4,6 +4,7 @@
 #include"const.h"
 #include<memory>
 #include<string>
+#include <vector>
 
 class MysqlDao{
 public:
@@ -20,6 +21,12 @@ public:
     int SearchUser(int uid,UserInfo& userinfo);
 
     int AddFriendApply(int from_uid, int to_uid, const std::string& apply_msg);
+
+    int GetApplyList(int to_uid,std::vector<ApplyInfo>& list);
+
+    int AuthFriendApply(int from_uid,int to_uid,bool agree);
+
+    int GetFriendList(int self_uid,std::vector<FriendInfo>& list);
 
 private:
     std::unique_ptr<MysqlPool> _pool;

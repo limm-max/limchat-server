@@ -4,6 +4,7 @@ project(ChatServer1
         DESCRIPTION "Chat Server of a chat program"
         LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #设置编程语言标准
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

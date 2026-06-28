@@ -8,7 +8,9 @@
 #include <cppconn/statement.h>
 #include <cppconn/exception.h>
 #include <ctime>
+#include <memory>
 #include<string>
+#include <vector>
 
 MysqlDao::MysqlDao() {
 
@@ -188,7 +190,9 @@ int MysqlDao::AddFriendApply(int from_uid, int to_uid, const std::string& apply_
 
     try {
         std::unique_ptr<sql::PreparedStatement> ps(con->_conn->prepareStatement(
-            "INSERT INTO friend_apply (from_uid, to_uid, apply_msg) VALUES (?, ?, ?)"));
+            "INSERT INTO friend_apply (from_uid, to_uid, apply_msg, status) "
+                "VALUES (?, ?, ?, 0) "
+                "ON DUPLICATE KEY UPDATE apply_msg = VALUES(apply_msg), status = 0"));
         ps->setInt(1, from_uid);
         ps->setInt(2, to_uid);
         ps->setString(3, apply_msg);
@@ -198,6 +202,124 @@ int MysqlDao::AddFriendApply(int from_uid, int to_uid, const std::string& apply_
     catch (sql::SQLException& e) {
         LOG_ERROR << "AddFriendApply SQL error: " << e.what()
                   << ", from=" << from_uid << ", to=" << to_uid;
+        return ErrorCodes::MysqlFailed;
+    }
+}
+
+int MysqlDao::GetApplyList(int to_uid,std::vector<ApplyInfo>& list){
+    auto con=_pool->getConnection();
+    if(con==nullptr) return ErrorCodes::MysqlFailed;
+
+    Defer defer([this,&con](){
+        _pool->returnConnection(std::move(con));
+    });
+
+    try{
+        std::unique_ptr<sql::PreparedStatement> pstmt(
+            con->_conn->prepareStatement(
+                "SELECT a.from_uid,a.apply_msg,a.status,"
+                "u.name,u.nick,u.icon.u.sex"
+                "FROM friend_apply a"
+                "JOIN users u ON a.from_uid=u.uid"
+                "WHERE a.to_uid=? AND a.status=0"
+                "ORDER BY a.id DESC"
+            )
+        );
+        pstmt->setInt(1,to_uid);
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+        while(res->next()){
+            ApplyInfo info;
+            info.from_uid  = res->getInt("from_uid");
+            info.apply_msg = res->getString("apply_msg");
+            info.status    = res->getInt("status");
+            info.name      = res->getString("name");
+            info.nick      = res->getString("nick");
+            info.icon      = res->getString("icon");
+            info.sex       = res->getInt("sex");
+            list.push_back(std::move(info));
+        }
+        return ErrorCodes::Success;
+    }catch(sql::SQLException& e){
+        LOG_ERROR<<"GetApplyList sql error:"<<e.what();
+        return ErrorCodes::MysqlFailed;
+    }
+}
+
+
+int MysqlDao::AuthFriendApply(int from_uid,int to_uid,bool agree){
+    auto con = _pool->getConnection();
+    if (con == nullptr) return ErrorCodes::MysqlFailed;
+    Defer defer([this, &con]() { _pool->returnConnection(std::move(con)); });
+
+    try{
+        //关闭自动提交，即进入事务模式
+        con->_conn->setAutoCommit(false);
+
+        //1.更新申请表
+        std::unique_ptr<sql::PreparedStatement> up(
+            con->_conn->prepareStatement(
+                "UPDATE friend_apply SET status=?"
+                "WHERE from_uid=? AND to_uid=?"
+            )
+        );
+        up->setInt(1, agree ? 1 : 2);
+        up->setInt(2, from_uid);
+        up->setInt(3, to_uid);
+        up->executeUpdate();
+
+        //2.同意则写friend表,INSERT IGNORE 容忍已是好友的重复
+        if(agree){
+            std::unique_ptr<sql::PreparedStatement> ins(
+                con->_conn->prepareStatement(
+                    "INSERT IGNORE INTO friend (self_id, friend_id) "
+                    "VALUES (?, ?), (?, ?)"));
+            ins->setInt(1, to_uid);    ins->setInt(2, from_uid);   // (B, A)
+            ins->setInt(3, from_uid);  ins->setInt(4, to_uid);     // (A, B)
+            ins->executeUpdate();
+        }
+
+        con->_conn->commit();
+        con->_conn->setAutoCommit(true);                   //还原，连接要回池复用
+        return ErrorCodes::Success;
+    }catch (sql::SQLException& e) {
+        LOG_ERROR << "AuthFriendApply sql error: " << e.what();
+        //出错要rollback
+        try { con->_conn->rollback(); con->_conn->setAutoCommit(true); } catch (...) {}
+        return ErrorCodes::MysqlFailed;
+    }
+}
+
+int MysqlDao::GetFriendList(int self_uid,std::vector<FriendInfo>& list){
+    auto con = _pool->getConnection();
+    if (con == nullptr) {
+        return ErrorCodes::MysqlFailed;      
+    }
+
+    Defer defer([this, &con]() { _pool->returnConnection(std::move(con)); });
+
+        try {
+        std::unique_ptr<sql::PreparedStatement> pstmt(
+            con->_conn->prepareStatement(
+                "SELECT u.uid, u.name, u.nick, u.icon, u.sex, f.back "
+                "FROM friend f "
+                "JOIN users u ON f.friend_uid = u.uid "
+                "WHERE f.self_uid = ? "
+                "ORDER BY u.uid ASC"));
+        pstmt->setInt(1, self_uid);
+        std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+        while (res->next()) {
+            FriendInfo info;
+            info.uid  = res->getInt("uid");
+            info.name = res->getString("name");
+            info.nick = res->getString("nick");
+            info.icon = res->getString("icon");
+            info.sex  = res->getInt("sex");
+            info.back = res->getString("back");
+            list.push_back(std::move(info));
+        }
+        return ErrorCodes::Success;              // 空列表也是 Success（新用户没好友很正常）
+    } catch (sql::SQLException& e) {
+        LOG_ERROR << "GetFriendList sql error: " << e.what();
         return ErrorCodes::MysqlFailed;
     }
 }

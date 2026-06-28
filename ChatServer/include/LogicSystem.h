@@ -22,8 +22,17 @@ private:
     void RegisterCallBacks();
 
     void HelloWordCallBack(std::shared_ptr<CSession>, short, const std::string&);  // echo 占位
+
     void LoginCallBack(std::shared_ptr<CSession>, short, const std::string&);
+
     void SearchUserCallBack(std::shared_ptr<CSession>, short, const std::string&);
+
+    void AddFriendApplyHandler(std::shared_ptr<CSession>, short, const std::string&);
+
+    void GetApplyListHandler(std::shared_ptr<CSession>,short, const std::string&);
+    void AuthFriendApplyHandler(std::shared_ptr<CSession>,short, const std::string&);
+
+    void GetFriendListHandler(std::shared_ptr<CSession>,short, const std::string&); 
 
     std::thread _worker_thread;
     std::queue<std::shared_ptr<LogicNode>> _msg_que;
